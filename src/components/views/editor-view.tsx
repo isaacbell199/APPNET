@@ -534,19 +534,9 @@ export function EditorView() {
     }
   }, [])
 
-  // Load chapters when project changes
-  useEffect(() => {
-    if (currentProject) {
-      loadChapters()
-    }
-  }, [currentProject?.id])
-
-  // Restore preset when project preset changes
-  useEffect(() => {
-    if (projectPreset && projectPreset !== 'none') {
-      restorePresetFromId(projectPreset)
-    }
-  }, [projectPreset])
+  // =========================================================
+  // DÉCLARATIONS DES FONCTIONS (DÉPLACÉES ICI POUR ÉVITER L'ERREUR)
+  // =========================================================
 
   // Load chapters from Tauri backend with fallback
   async function loadChapters() {
@@ -639,6 +629,53 @@ export function EditorView() {
     }
   }
 
+  // Save chapter function
+  const saveChapter = useCallback(async () => {
+    if (!currentChapter) return
+    setIsSaving(true)
+    
+    try {
+      if (isTauri()) {
+        await updateChapter(currentChapter.id, {
+          ...currentChapter,
+          content: editorContent,
+          title: chapterTitle
+        })
+      }
+      
+      // Update in local state
+      setChapters(prev => prev.map(ch => 
+        ch.id === currentChapter.id 
+          ? { ...ch, content: editorContent, title: chapterTitle } 
+          : ch
+      ))
+      
+      setLastSaved(new Date())
+    } catch (error) {
+      console.error('Failed to save chapter:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }, [currentChapter, editorContent, chapterTitle])
+
+  // =========================================================
+  // APPELS DES EFFETS (MAINTENANT QUE LES FONCTIONS SONT CONNUES)
+  // =========================================================
+
+  // Load chapters when project changes
+  useEffect(() => {
+    if (currentProject) {
+      loadChapters()
+    }
+  }, [currentProject?.id])
+
+  // Restore preset when project preset changes
+  useEffect(() => {
+    if (projectPreset && projectPreset !== 'none') {
+      restorePresetFromId(projectPreset)
+    }
+  }, [projectPreset])
+
   // Auto-save
   useEffect(() => {
     if (autoSaveTimerRef.current) {
@@ -654,10 +691,9 @@ export function EditorView() {
         clearTimeout(autoSaveTimerRef.current)
       }
     }
-  }, [editorContent, chapterTitle])
+  }, [editorContent, chapterTitle, saveChapter, currentChapter])
 
-  // Cleanup auto-save timer on unmount to prevent memory leaks
-  // and attempts to update state on an unmounted component
+  // Cleanup auto-save timer on unmount
   useEffect(() => {
     return () => {
       if (autoSaveTimerRef.current) {
@@ -667,37 +703,11 @@ export function EditorView() {
     }
   }, [])
 
-  // Save chapter
-  const saveChapter = useCallback(async () => {
-    if (!currentChapter) return
-    setIsSaving(true)
-    
-    try {
-      if (isTauri()) {
-        await updateChapter(currentChapter.id, {
-          ...currentChapter,
-          content: editorContent,
-          title: chapterTitle
-        })
-      }
-      
-      updateChapterInList(currentChapter.id, { 
-        content: editorContent, 
-        title: chapterTitle 
-      })
-      
-      setLastSaved(new Date())
-    } catch (error) {
-      console.error('Failed to save chapter:', error)
-    } finally {
-      setIsSaving(false)
-    }
-  }, [currentChapter, editorContent, chapterTitle, updateChapterInList])
-
   // Keyboard shortcuts (Ctrl+S for save)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+S or Cmd+S for save
+
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault()
         if (currentChapter && editorContent !== currentChapter.content) {
