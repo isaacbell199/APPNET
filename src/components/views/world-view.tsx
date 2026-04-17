@@ -175,10 +175,9 @@ export function WorldView() {
   })
   const [isSaving, setIsSaving] = useState(false)
   
-  // --- 1. DÉCLARATION DE LA FONCTION ---
+ // 1. Déclaration de la fonction
   async function loadWorldData() {
-    if (!currentProject) return
-    const saved = localStorage.getItem(`world_studio_${currentProject.id}`)
+    const saved = localStorage.getItem(`world_studio_${currentProject?.id}`)
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
@@ -187,11 +186,12 @@ export function WorldView() {
           restorePresetFromId(parsed.preset)
         }
       } catch (e) {
-        console.error('Failed to load world data:', e)
+        console.error('Failed to load world data from localStorage:', e)
       }
     }
   }
 
+  // 2. Utilisation dans useEffect
   useEffect(() => {
     if (currentProject) {
       loadWorldData()
@@ -202,31 +202,16 @@ export function WorldView() {
       try {
         const parsed = JSON.parse(currentSaved)
         setWorldData(prev => ({ ...prev, ...parsed }))
-        if (parsed.preset && parsed.preset !== 'none') {
-          restorePresetFromId(parsed.preset)
-        }
       } catch (e) {
         console.error('Failed to load current world data:', e)
       }
     }
   }, [currentProject?.id])
 
-  // --- 3. LES AUTRES FONCTIONS DU FICHIER ---
+  // 3. Sauvegarde (AVANT il y avait une accolade en trop juste ici !)
   async function handleSave() {
     if (!currentProject) return
     setIsSaving(true)
-    
-    try {
-      // On prépare les données à sauvegarder
-      const dataToSave = { ...worldData, preset: selectedPresetId }
-      
-      // Sauvegarde locale
-      localStorage.setItem(`world_studio_${currentProject.id}`, JSON.stringify(dataToSave))
-      localStorage.setItem('world_studio_current', JSON.stringify(dataToSave))
-
-      
-      // Persist to Tauri database (SQLite)
-      if (isTauri()) {
         // Save characters to database (create new ones)
         for (const char of worldData.characters) {
           if (char.title.trim()) {
