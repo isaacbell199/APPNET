@@ -245,41 +245,6 @@ export function ModelsView() {
   const setModels = store.setModels
   const selectedModelId = store.selectedModelId
   const setSelectedModelId = store.setSelectedModelId
-
-  // ========================================
-  // Initialization
-  // ========================================
-
-  useEffect(() => {
-    let mounted = true
-    const initializeView = async () => {
-      setIsLoading(true)
-      clearError()
-      store.setModelPath(null)
-      store.setIsModelLoaded(false)
-      store.setSelectedModelId(null)
-      store.setDuoModelEnabled(false)
-      store.setDuoModelDraftPath(null)
-
-      try {
-        await detectHardware()
-        if (mounted) {
-          await scanModelsFolder()
-          await loadModelSystemPrompts()
-        }
-        if (mounted && isTauri()) {
-          await refreshDuoModelStatus()
-        }
-      } catch (error) {
-        if (mounted) setError('Failed to initialize Models view', error)
-      } finally {
-        if (mounted) setIsLoading(false)
-      }
-    }
-    initializeView()
-    return () => { mounted = false }
-  }, [])
-
   // ========================================
   // Hardware Detection
   // ========================================
@@ -317,7 +282,6 @@ export function ModelsView() {
       setError('Hardware detection failed', error)
     }
   }
-
   // ========================================
   // Model Scanning
   // ========================================
@@ -338,8 +302,7 @@ export function ModelsView() {
       setModels([])
     }
   }
-
-  // ========================================
+   // ========================================
   // Model System Prompt (localStorage for Tauri desktop)
   // ========================================
 
@@ -357,6 +320,54 @@ export function ModelsView() {
       console.warn('[ModelsView] Failed to load model system prompts:', error)
     }
   }
+   // ========================================
+  // Duo Model Handlers
+  // ========================================
+
+  const refreshDuoModelStatus = useCallback(async () => {
+    if (!isTauri()) return
+    try {
+      const status = await tauriGetDuoModelStatus()
+      setDuoModelStatus({
+        enabled: status.enabled || false, mainModelLoaded: status.mainModelLoaded || false,
+        draftModelLoaded: status.draftModelLoaded || false, ready: status.ready || false,
+        mainModelPath: status.mainModelPath || null, draftModelPath: status.draftModelPath || null
+      })
+    } catch (error) { console.error('[ModelsView] Failed to get duo model status:', error) }
+  }, [])
+  // ========================================
+  // Initialization
+  // ========================================
+
+  useEffect(() => {
+    let mounted = true
+    const initializeView = async () => {
+      setIsLoading(true)
+      clearError()
+      store.setModelPath(null)
+      store.setIsModelLoaded(false)
+      store.setSelectedModelId(null)
+      store.setDuoModelEnabled(false)
+      store.setDuoModelDraftPath(null)
+
+      try {
+        await detectHardware()
+        if (mounted) {
+          await scanModelsFolder()
+          await loadModelSystemPrompts()
+        }
+        if (mounted && isTauri()) {
+          await refreshDuoModelStatus()
+        }
+      } catch (error) {
+        if (mounted) setError('Failed to initialize Models view', error)
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+    initializeView()
+    return () => { mounted = false }
+  }, [])
 
   const handleSaveSystemPrompt = async (model: ModelInfoData) => {
     const prompt = modelSystemPrompts[model.path] || ''
@@ -502,22 +513,6 @@ export function ModelsView() {
       toast.success('Model unloaded')
     } catch (error) { setError('Failed to unload model', error) }
   }
-
-  // ========================================
-  // Duo Model Handlers
-  // ========================================
-
-  const refreshDuoModelStatus = useCallback(async () => {
-    if (!isTauri()) return
-    try {
-      const status = await tauriGetDuoModelStatus()
-      setDuoModelStatus({
-        enabled: status.enabled || false, mainModelLoaded: status.mainModelLoaded || false,
-        draftModelLoaded: status.draftModelLoaded || false, ready: status.ready || false,
-        mainModelPath: status.mainModelPath || null, draftModelPath: status.draftModelPath || null
-      })
-    } catch (error) { console.error('[ModelsView] Failed to get duo model status:', error) }
-  }, [])
 
   const handleSelectTargetModel = async () => {
     try {
