@@ -177,7 +177,8 @@ export function WorldView() {
   
   // --- 1. DÉCLARATION DE LA FONCTION ---
   async function loadWorldData() {
-    const saved = localStorage.getItem(`world_studio_${currentProject?.id}`)
+    if (!currentProject) return
+    const saved = localStorage.getItem(`world_studio_${currentProject.id}`)
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
@@ -185,21 +186,17 @@ export function WorldView() {
         if (parsed.preset && parsed.preset !== 'none') {
           restorePresetFromId(parsed.preset)
         }
-        return
       } catch (e) {
-        console.error('Failed to load world data from localStorage:', e)
+        console.error('Failed to load world data:', e)
       }
     }
   }
 
-  // --- 2. UTILISATION DES EFFETS (APPELS) ---
   useEffect(() => {
-    // Charge les données par projet
     if (currentProject) {
       loadWorldData()
     }
     
-    // Charge les données temporaires du wizard
     const currentSaved = localStorage.getItem('world_studio_current')
     if (currentSaved) {
       try {
@@ -212,7 +209,7 @@ export function WorldView() {
         console.error('Failed to load current world data:', e)
       }
     }
-  }, [currentProject?.id]) // L'effet se ferme ICI proprement
+  }, [currentProject?.id])
 
   // --- 3. LES AUTRES FONCTIONS DU FICHIER ---
   async function handleSave() {
