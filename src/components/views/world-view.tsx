@@ -175,15 +175,13 @@ export function WorldView() {
   })
   const [isSaving, setIsSaving] = useState(false)
   
-// On déclare la fonction d'abord pour que l'ordinateur la connaisse
+  // --- 1. DÉCLARATION DE LA FONCTION ---
   async function loadWorldData() {
-    // First try to load from localStorage
     const saved = localStorage.getItem(`world_studio_${currentProject?.id}`)
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
         setWorldData({ ...defaultWorldData, ...parsed })
-        // Restore preset from saved data
         if (parsed.preset && parsed.preset !== 'none') {
           restorePresetFromId(parsed.preset)
         }
@@ -192,48 +190,43 @@ export function WorldView() {
         console.error('Failed to load world data from localStorage:', e)
       }
     }
-    // All database operations go through Tauri invoke commands in the Rust backend
   }
 
-  // Puis on utilise le useEffect qui l'appelle
-  // Load saved world data on mount
+  // --- 2. UTILISATION DES EFFETS (APPELS) ---
   useEffect(() => {
+    // Charge les données par projet
     if (currentProject) {
       loadWorldData()
     }
-  }, [currentProject?.id])
     
-    // Also try to load 'current' project data (from wizard)
+    // Charge les données temporaires du wizard
     const currentSaved = localStorage.getItem('world_studio_current')
     if (currentSaved) {
       try {
         const parsed = JSON.parse(currentSaved)
-        setWorldData({ ...defaultWorldData, ...parsed })
-        // Restore preset from saved data
+        setWorldData(prev => ({ ...prev, ...parsed }))
         if (parsed.preset && parsed.preset !== 'none') {
           restorePresetFromId(parsed.preset)
         }
-        return
       } catch (e) {
         console.error('Failed to load current world data:', e)
       }
     }
-    
-    // Data is stored locally in Tauri via localStorage
-    // All database operations go through Tauri invoke commands in the Rust backend
-  }
-  
+  }, [currentProject?.id]) // L'effet se ferme ICI proprement
+
+  // --- 3. LES AUTRES FONCTIONS DU FICHIER ---
   async function handleSave() {
     if (!currentProject) return
     setIsSaving(true)
     
     try {
-      // Include current preset from store in worldData
+      // On prépare les données à sauvegarder
       const dataToSave = { ...worldData, preset: selectedPresetId }
       
-      // Save to localStorage for quick access
+      // Sauvegarde locale
       localStorage.setItem(`world_studio_${currentProject.id}`, JSON.stringify(dataToSave))
       localStorage.setItem('world_studio_current', JSON.stringify(dataToSave))
+
       
       // Persist to Tauri database (SQLite)
       if (isTauri()) {
