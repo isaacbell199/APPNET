@@ -1153,3 +1153,4 @@ function CollapsibleSection({ title, icon, color, expanded, onToggle, action, ch
     </motion.div>
   )
 }
+}
