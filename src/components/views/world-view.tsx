@@ -1152,5 +1152,6 @@ function CollapsibleSection({ title, icon, color, expanded, onToggle, action, ch
       </AnimatePresence>
     </motion.div>
   )
-}
-}
+} // <--- Ferme la fonction "Section"
+
+} // <--- Ferme le composant "WorldView" (C'EST CELLE-LÀ QUI MANQUE PROBABLEMENT)
