@@ -263,29 +263,69 @@ export function WorldView() {
       }
       
       toast.success('World studio saved!', {
-        description: 'Your production settings are ready for the editor.'
-      })
+          // --- 1. CHARGEMENT ---
+  async function loadWorldData() {
+    if (!currentProject) return
+    const saved = localStorage.getItem(`world_studio_${currentProject.id}`)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        setWorldData({ ...defaultWorldData, ...parsed })
+        if (parsed.preset && parsed.preset !== 'none') {
+          restorePresetFromId(parsed.preset)
+        }
+      } catch (e) {
+        console.error('Failed to load world data:', e)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (currentProject) {
+      loadWorldData()
+    }
+    const currentSaved = localStorage.getItem('world_studio_current')
+    if (currentSaved) {
+      try {
+        const parsed = JSON.parse(currentSaved)
+        setWorldData(prev => ({ ...prev, ...parsed }))
+      } catch (e) {
+        console.error('Failed to load current data:', e)
+      }
+    }
+  }, [currentProject?.id])
+
+  // --- 2. SAUVEGARDE ---
+  async function handleSave() {
+    if (!currentProject) return
+    setIsSaving(true)
+    try {
+      const dataToSave = { ...worldData, preset: selectedPresetId }
+      localStorage.setItem(`world_studio_${currentProject.id}`, JSON.stringify(dataToSave))
+      localStorage.setItem('world_studio_current', JSON.stringify(dataToSave))
+      
+      setProjectCategory(worldData.category.id)
+      setProjectTone(worldData.tone.id)
+      setProjectWritingStyle(worldData.writingStyle.id)
+      setProjectTheme(worldData.theme.id)
+      setProjectPreset(selectedPresetId)
+      
+      toast.success('Settings saved')
     } catch (error) {
-      toast.error('Failed to save')
       console.error(error)
+      toast.error('Failed to save')
     } finally {
       setIsSaving(false)
     }
   }
-  
+
+  // --- 3. IMPORTATION ---
   function handleImportToEditor() {
-    // Sync all settings to global store before importing
-    syncSettingsToStore()
-    
-    // Save to localStorage
     handleSave()
-    
-    // Navigate to editor
     setCurrentView('editor')
-    toast.success('Settings imported to editor!', {
-      description: 'Your world studio configuration is now active.'
-    })
+    toast.success('Settings imported to editor!')
   }
+
   
   // Sync all World Studio settings to the global store
   function syncSettingsToStore() {
