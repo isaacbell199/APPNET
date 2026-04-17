@@ -175,13 +175,7 @@ export function WorldView() {
   })
   const [isSaving, setIsSaving] = useState(false)
   
-  // Load saved world data on mount
-  useEffect(() => {
-    if (currentProject) {
-      loadWorldData()
-    }
-  }, [currentProject?.id])
-  
+// On déclare la fonction d'abord pour que l'ordinateur la connaisse
   async function loadWorldData() {
     // First try to load from localStorage
     const saved = localStorage.getItem(`world_studio_${currentProject?.id}`)
@@ -198,6 +192,16 @@ export function WorldView() {
         console.error('Failed to load world data from localStorage:', e)
       }
     }
+    // All database operations go through Tauri invoke commands in the Rust backend
+  }
+
+  // Puis on utilise le useEffect qui l'appelle
+  // Load saved world data on mount
+  useEffect(() => {
+    if (currentProject) {
+      loadWorldData()
+    }
+  }, [currentProject?.id])
     
     // Also try to load 'current' project data (from wizard)
     const currentSaved = localStorage.getItem('world_studio_current')
